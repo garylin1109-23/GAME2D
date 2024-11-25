@@ -35,6 +35,18 @@ import androidx.compose.ui.unit.IntOffset
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+import android.graphics.Rect
+import android.media.MediaPlayer
+import androidx.compose.ui.platform.LocalContext
+import android.app.Activity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Alignment
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,10 +57,12 @@ class MainActivity : ComponentActivity() {
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
                     var screenW = resources.displayMetrics.widthPixels
                     var screenH = resources.displayMetrics.heightPixels
-
-                    val game = Game(GlobalScope, screenW, screenH)
+                    val scale = resources.displayMetrics.density
+                    val game = Game(GlobalScope, screenW, screenH,scale, this)
                     Start(m= Modifier.padding(innerPadding),game,screenW)
 
+                    var mper1 = MediaPlayer.create(this, R.raw.lastletter)
+                    mper1.start()
                 }
             }
         }
@@ -77,19 +91,76 @@ fun Start(m:Modifier, game:Game, screenW:Int) {
             .offset { IntOffset(game.background.x2, 0) }
     )
 
+    val boyImage = arrayListOf(R.drawable.boy1, R.drawable.boy2,
+        R.drawable.boy3, R.drawable.boy4, R.drawable.boy5,
+        R.drawable.boy6, R.drawable.boy7, R.drawable.boy8)
+
+    Image(
+        painter = painterResource(id = boyImage[game.boy.pictNo]),
+        contentDescription = "小男孩",
+        modifier = Modifier
+            .width(100.dp)
+            .height(220.dp)
+            .offset { IntOffset(game.boy.x, game.boy.y) }
+
+    )
+
+    //繪製病毒
+    val virusImage = arrayListOf(R.drawable.virus1, R.drawable.virus2)
+    Image(
+        painter = painterResource(id = virusImage[game.virus.pictNo]),
+        contentDescription = "病毒",
+        modifier = Modifier
+            .size(80.dp)
+            .offset { IntOffset(game.virus.x, game.virus.y) }
+            .pointerInput(Unit) { //觸控病毒往上，扣一秒鐘
+                detectTapGestures(
+                    onTap = {
+                        game.virus.y -= 40
+                        game.counter -= 25
+
+                    }
+                )
+            }
+    )
+
+    Image(
+        painter = painterResource(id = virusImage[game.virus.pictNo]),
+        contentDescription = "病毒2",
+        modifier = Modifier
+            .size(80.dp)
+            .offset { IntOffset(game.virus2.x, game.virus2.y) }
+            .pointerInput(Unit) { //觸控病毒往上，扣一秒鐘
+                detectTapGestures(
+                    onTap = {
+                        game.virus.y -= 40
+                        game.counter -= 25
+
+                    }
+                )
+            }
+    )
+
+    if (msg == "遊戲暫停" && !game.isPlaying){
+        msg = "遊戲結束，按此按鍵重新開始遊戲"
+    }
     Row {
         Button(
             onClick = {
-                if (msg == "遊戲開始") {
+                if (msg == "遊戲開始"|| msg =="遊戲繼續") {
                     msg = "遊戲暫停"
                     game.Play()
-                } else {
-                    msg = "遊戲開始"
+                }
+                else if (msg == "遊戲暫停") {
+                    msg = "遊戲繼續"
                     game.isPlaying = false
                 }
+                else{ //重新開始遊戲
+                    msg = "遊戲暫停"
+                    game.Restart()
+                }
 
-            },
-            modifier = m
+            }
         ) {
             Text(text = msg)
         }
@@ -108,6 +179,25 @@ fun Start(m:Modifier, game:Game, screenW:Int) {
         Text(text = counter2.toString(), modifier = m)
     }
 
+    val activity = (LocalContext.current as? Activity)
+    Box (
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.BottomCenter
+    ){
+        Button(
+            onClick = {
+                game.mper1.stop()
+                game.mper2.stop()
+                activity?.finish()
+            }
+
+        ) {
+
+            Text("結束App")
+
+        }
+
+    }
 
 }
 
